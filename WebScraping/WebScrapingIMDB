@@ -1,0 +1,64 @@
+import requests
+from bs4 import BeautifulSoup
+import statistics
+
+headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'}
+
+def get_top_250_movies():
+    url = "https://www.imdb.com/chart/top"
+    try:
+        response = requests.get(url, headers=headers)
+        soup = BeautifulSoup(response.text, "html.parser")
+        top_250 = soup.find("tbody", attrs={"class": "lister-list"}).find_all("tr")
+        return top_250
+    except requests.exceptions.RequestException as e:
+        print(e)
+        return None
+
+def get_movie_rating(movie):
+    rating = float(movie.find("td", attrs={"class": "ratingColumn imdbRating"}).strong.text)
+    return rating
+
+def get_highest_rating_movie(top_250_movies):
+    highest_rating_film = top_250_movies[0]
+    title = highest_rating_film.find("td", attrs={"class": "titleColumn"}).a.text
+    year = highest_rating_film.find("td", attrs={"class": "titleColumn"}).span.text
+    rating = get_movie_rating(highest_rating_film)
+    return title, year, rating
+
+def get_lowest_rating_movie(top_250_movies):
+    lowest_rating_film = top_250_movies[-1]
+    title = lowest_rating_film.find("td", attrs={"class": "titleColumn"}).a.text
+    year = lowest_rating_film.find("td", attrs={"class": "titleColumn"}).span.text
+    rating = get_movie_rating(lowest_rating_film)
+    return title, year, rating
+
+def get_average_rating(top_250_movies):
+    ratings = [get_movie_rating(movie) for movie in top_250_movies]
+    return statistics.mean(ratings)
+
+def get_median_rating(top_250_movies):
+    ratings = [get_movie_rating(movie) for movie in top_250_movies]
+    return statistics.median(ratings)
+
+def get_stdev_rating(top_250_movies):
+    ratings = [get_movie_rating(movie) for movie in top_250_movies]
+    return statistics.stdev(ratings)
+
+if __name__ == '__main__':
+    top_250_movies = get_top_250_movies()
+    if top_250_movies:
+        title, year, rating = get_highest_rating_movie(top_250_movies)
+        print("En yüksek puanlı film: {} ({}) - {} puan".format(title, year, rating))
+
+        title, year, rating = get_lowest_rating_movie(top_250_movies)
+        print("En düşük puanlı film: {} ({}) - {} puan".format(title, year, rating))
+
+        average_rating = get_average_rating(top_250_movies)
+        print("Ortalama puan: {:.2f}".format(average_rating))
+
+        median_rating = get_median_rating(top_250_movies)
+        print("Median rating: ", median_rating)
+
+        stdev_rating = get_stdev_rating(top_250_movies)
+        print("Standard deviation of ratings: ", stdev_rating)
